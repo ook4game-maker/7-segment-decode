@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segment Display Master - 3 Blocks</title>
+    <meta name="description" content="7 segment decoder">
+    <meta name="keywords" content="7 segment, 14 segment, 16 segment">
+    <meta name="author" content="ookprakan">
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #030503;
+            color: #00ff66;
+            font-family: 'Chakra Petch', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.8em;
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.5);
+            margin-bottom: 25px;
+        }
+
+        .dashboard-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 950px;
+        }
+
+        .block-card {
+            background: rgba(10, 15, 10, 0.95);
+            border: 2px solid rgba(0, 255, 102, 0.4);
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 450px;
+            box-sizing: border-box;
+        }
+
+        .block-title {
+            font-size: 1.2em;
+            color: #00ff66;
+            border-bottom: 1px dashed rgba(0, 255, 102, 0.3);
+            width: 100%;
+            padding-bottom: 8px;
+            text-align: center;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .mode-btn {
+            flex: 1;
+            background: #0a1a0c;
+            border: 1px solid #00ff66;
+            color: #00ff66;
+            padding: 8px 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #00ff66;
+            color: #030503;
+            box-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+        }
+
+        .fsd-wrapper {
+            width: 120px;
+            height: 170px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            display: none;
+        }
+
+        svg.active-display {
+            display: block;
+        }
+
+        .segment {
+            fill: #222323;
+            stroke: #0a1a0c;
+            stroke-width: 0.5;
+            transition: fill 0.15s ease, filter 0.15s ease;
+        }
+
+        #block-decode .segment {
+            cursor: pointer;
+        }
+        #block-decode .segment:hover {
+            fill: #00aa44;
+            filter: drop-shadow(0 0 4px rgba(0, 255, 102, 0.6));
+        }
+
+        .seg-on {
+            fill: #00ff66;
+            stroke: #00ff66;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.9));
+        }
+
+        .seg-label {
+            font-family: monospace;
+            font-size: 12px;
+            fill: #00aa44;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        .seg-on + .seg-label {
+            fill: #e20a0a;
+        }
+
+        .output-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .output-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .output-label {
+            font-size: 1.2em;
+            color: #00cc55;
+        }
+
+        .array-table-container {
+            width: 100%;
+            overflow-x: auto;
+            background: #000;
+            border: 1px solid #00ff66;
+            border-radius: 6px;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .array-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: monospace;
+            text-align: center;
+        }
+
+        .array-table th {
+            font-size: 1.2em;
+            color: #00cc55;
+            border-bottom: 1px solid #005522;
+            padding: 3px 4px;
+        }
+
+        .array-table td {
+            font-size: 1.2em;
+            color: #00ff66;
+            padding: 4px;
+        }
+
+        .output-box {
+            background: #000;
+            border: 1px solid #00ff66;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 2em;
+            color: #00ff66;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .copy-btn {
+            background: #0b2313;
+            border: 1px solid #00ff66;
+            color: #00ff66;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7em;
+            font-family: 'Chakra Petch', sans-serif;
+            transition: 0.2s;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .copy-btn:hover {
+            background: #00ff66;
+            color: #000;
+        }
+
+        .loop-info {
+            font-size: 0.9em;
+            color: #00cc55;
+            letter-spacing: 1px;
+            height: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Segment Display Master Control</h1>
+
+    <div class="dashboard-grid">
+
+        <!-- บล็อกที่ 1: Decode (7, 14, 16 Segment) -->
+        <div class="block-card" id="block-decode">
+            <div class="block-title">1. Decode & Generator</div>
+            <div class="mode-selector">
+                <button class="mode-btn active" id="dec-btn-7" onclick="switchMode(7)">7-Seg</button>
+                <button class="mode-btn" id="dec-btn-14" onclick="switchMode(14)">14-Seg</button>
+                <button class="mode-btn " id="dec-btn-16" onclick="switchMode(16)">16-Seg</button>
+            </div>
+
+            <div class="fsd-wrapper">
+                <!-- 7-Segment SVG -->
+                <svg viewBox="0 0 100 150" id="dec-svg-7">
+                    <polygon id="dec-7-a" class="segment" points="20,10 90,10 82,18 28,18" onclick="toggleDecSeg('7', 'a')" />
+                    <text x="55" y="12" class="seg-label">a</text>
+                    <polygon id="dec-7-b" class="segment" points="85,20 95,10 95,60 85,53" onclick="toggleDecSeg('7', 'b')" />
+                    <text x="88" y="40" class="seg-label">b</text>
+                    <polygon id="dec-7-c" class="segment" points="85,71 95,65 95,118 85,110" onclick="toggleDecSeg('7', 'c')" />
+                    <text x="90" y="85" class="seg-label">c</text>
+                    <polygon id="dec-7-d" class="segment" points="22,118 92,119 82,110 32,109" onclick="toggleDecSeg('7', 'd')" />
+                    <text x="55" y="112" class="seg-label">d</text>
+                    <polygon id="dec-7-e" class="segment" points="20,66 30,72 30,106 20,115" onclick="toggleDecSeg('7', 'e')" />
+                    <text x="22" y="82" class="seg-label">e</text>
+                    <polygon id="dec-7-f" class="segment" points="20,13 30,20 30,54 20,59" onclick="toggleDecSeg('7', 'f')" />
+                    <text x="22" y="40" class="seg-label">f</text>
+                    <polygon id="dec-7-g" class="segment" points="30,56 22,61 30,66 84,66 92,61 84,56" onclick="toggleDecSeg('7', 'g')" />
+                    <text x="55" y="60" class="seg-label">g</text>
+                    <circle id="dec-7-dp" class="segment" cx="105" cy="110" r="5" onclick="toggleDecSeg('7', 'dp')" />
+                    <text x="110" y="110" class="seg-label" style="font-size:12px;">dp</text>
+                </svg>
+
+                <!-- 14-Segment SVG -->
+                <svg viewBox="0 0 100 150" id="dec-svg-14">
+                    <polygon id="dec-14-a" class="segment" points="19,11 88,11 82,20 26,20" onclick="toggleDecSeg('14', 'a')" />
+                    <text x="50" y="15" class="seg-label">a</text>
+                    <polygon id="dec-14-b" class="segment" points="91,11 91,69 84,63 84,22" onclick="toggleDecSeg('14', 'b')" />
+                    <text x="85" y="38" class="seg-label">b</text>
+                    <polygon id="dec-14-c" class="segment" points="91,71 91,131 84,123 84,78" onclick="toggleDecSeg('14', 'c')" />
+                    <text x="87" y="100" class="seg-label">c</text>
+                    <polygon id="dec-14-d" class="segment" points="23,124 82,124 89,132 18,132" onclick="toggleDecSeg('14', 'd')" />
+                    <text x="60" y="130" class="seg-label">d</text>
+                    <polygon id="dec-14-e" class="segment" points="23,79 23,120 16,129 16,73" onclick="toggleDecSeg('14', 'e')" />
+                    <text x="18" y="100" class="seg-label" >e</text>
+                    <polygon id="dec-14-f" class="segment" points="23,21 23,62 16,69 16,12" onclick="toggleDecSeg('14', 'f')" />
+                    <text x="18" y="38" class="seg-label" >f</text>
+                    <polygon id="dec-14-g1" class="segment" points="26,64 48,64 53,71 47,76 26,76 19,70" onclick="toggleDecSeg('14', 'g1')" />
+                    <text x="35" y="68" class="seg-label" >g1</text>
+                    <polygon id="dec-14-g2" class="segment" points="62,64 82,64 87,70 82,76 62,76 58,71" onclick="toggleDecSeg('14', 'g2')" />
+                    <text x="75" y="68" class="seg-label" >g2</text>
+                    <polygon id="dec-14-h" class="segment" points="25,23 48,51 48,60 25,33" onclick="toggleDecSeg('14', 'h')" />
+                    <text x="36" y="42" class="seg-label">h</text>
+                    <polygon id="dec-14-i" class="segment" points="51,22 59,22 59,61 56,69 52,62" onclick="toggleDecSeg('14', 'i')" />
+                    <text x="55" y="35" class="seg-label">i</text>
+                    <polygon id="dec-14-j" class="segment" points="80,21 79,34 63,62 63,52" onclick="toggleDecSeg('14', 'j')" />
+                    <text x="72" y="42" class="seg-label">j</text>
+                    <polygon id="dec-14-k" class="segment" points="51,76 51,88 26,122 26,111" onclick="toggleDecSeg('14', 'k')" />
+                    <text x="38" y="95" class="seg-label">k</text>
+                    <polygon id="dec-14-l" class="segment" points="53,80 56,74 60,80 60,121 53,121" onclick="toggleDecSeg('14', 'l')" />
+                    <text x="55" y="110" class="seg-label">l</text>
+                    <polygon id="dec-14-m" class="segment" points="62,77 82,110 82,121 62,87" onclick="toggleDecSeg('14', 'm')" />
+                    <text x="72" y="95" class="seg-label">m</text>
+                    <circle id="dec-14-dp" class="segment" cx="100" cy="130" r="5" onclick="toggleDecSeg('14', 'dp')" />
+                    <text x="100" y="130" class="seg-label" style="font-size:12px;">dp</text>
+                </svg>
+
+                <!-- 16-Segment SVG -->
+                <svg viewBox="0 0 100 150" id="dec-svg-16">
+                    <polygon id="dec-16-a1" class="segment" points="10,10 44,10 40,18 16,18" onclick="toggleDecSeg('16', 'a1')" />
+                    <text x="28" y="12" class="seg-label" >a1</text>
+                    <polygon id="dec-16-a2" class="segment" points="46,10 80,10 73,18 51,18"  onclick="toggleDecSeg('16', 'a2')" />
+                    <text x="60" y="12" class="seg-label" >a2</text>
+                    <polygon id="dec-16-b" class="segment" points="74,19 80,13 80,59 74,54" onclick="toggleDecSeg('16', 'b')" />
+                    <text x="78" y="35" class="seg-label">b</text>
+                    <polygon id="dec-16-c" class="segment" points="74,68 80,61 80,107 74,99" onclick="toggleDecSeg('16', 'c')" />
+                    <text x="78" y="82" class="seg-label">c</text>
+                    <polygon id="dec-16-d1" class="segment" points="17,103 40,103 44,110 12,110" onclick="toggleDecSeg('16', 'd1')" />
+                    <text x="25" y="106" class="seg-label">d1</text>
+                    <polygon id="dec-16-d2" class="segment" points="50,103 74,103 79,110 46,110" onclick="toggleDecSeg('16', 'd2')" />
+                    <text x="60" y="106" class="seg-label">d2</text>
+                    <polygon id="dec-16-e" class="segment" points="10,63 16,68 16,100 10,108" onclick="toggleDecSeg('16', 'e')" />
+                    <text x="12" y="80" class="seg-label" >e</text>
+                    <polygon id="dec-16-f" class="segment" points="10,14 16,21 16,54 10,60" onclick="toggleDecSeg('16', 'f')" />
+                    <text x="12" y="40" class="seg-label" >f</text>
+                    <polygon id="dec-16-g1" class="segment" points="18,55 39,55 44,60 40,66 18,66 12,61" onclick="toggleDecSeg('16', 'g1')" />
+                    <text x="25" y="60" class="seg-label">g1</text>
+                    <polygon id="dec-16-g2" class="segment" points="52,55 71,55 77,61 72,66 50,66 47,60" onclick="toggleDecSeg('16', 'g2')" />
+                    <text x="60" y="60" class="seg-label">g2</text>
+                    <polygon id="dec-16-h" class="segment" points="18,26 18,20 25,20 39,46 40,53 33,53" onclick="toggleDecSeg('16', 'h')" />
+                    <text x="30" y="40" class="seg-label" >h</text>
+                    <polygon id="dec-16-i" class="segment" points="41,22 45,13 50,22 50,53 45,59 41,51" onclick="toggleDecSeg('16', 'i')" />
+                    <text x="45" y="38" class="seg-label" >i</text>
+                    <polygon id="dec-16-j" class="segment" points="66,20 72,20 72,27 59,53 52,53 52,46" onclick="toggleDecSeg('16', 'j')" />
+                    <text x="62" y="38" class="seg-label">j</text>
+                    <polygon id="dec-16-k" class="segment" points="33,68 39,68 39,76 25,101 18,101 18,94" onclick="toggleDecSeg('16', 'k')" />
+                    <text x="30" y="80" class="seg-label">k</text>
+                    <polygon id="dec-16-l" class="segment" points="41,69 45,63 49,69 49,100 45,107 41,100" onclick="toggleDecSeg('16', 'l')" />
+                    <text x="45" y="90" class="seg-label">l</text>
+                    <polygon id="dec-16-m" class="segment" points="51,74 51,68 57,68 72,93 72,101 66,101" onclick="toggleDecSeg('16', 'm')" />
+                    <text x="62" y="80" class="seg-label">m</text>
+                    <circle id="dec-16-dp" class="segment" cx="92" cy="105" r="5" onclick="toggleDecSeg('16', 'dp')" />
+                    <text x="92" y="105" class="seg-label" style="font-size:12px;">dp</text>
+                </svg>
+            </div>
+
+            <!-- Array Map Table -->
+            <div class="output-group">
+                <div class="output-label-row">
+                    <div class="output-label">Array Map (Table):</div>
+                    <button class="copy-btn" onclick="copyArrayMap()">Copy Array</button>
+                </div>
+                <div class="array-table-container">
+                    <table class="array-table" id="dec-out-table"></table>
+                </div>
+            </div>
+
+            <div class="output-group">
+                <div class="output-label">Hex Code (DP แยกอิสระ):</div>
+                <div class="output-box">
+                    <span id="dec-out-hex">0x0000</span>
+                    <button class="copy-btn" onclick="copyText('dec-out-hex')">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- บล็อกที่ 2: Loop Display (1s) ตามโหมดที่เลือก -->
+        <div class="block-card" id="block-loop">
+            <div class="block-title" id="loop-block-title">2. Loop Display (1s)</div>
+            
+            <div class="fsd-wrapper">
+                <!-- 7-Segment Loop SVG -->
+                <svg viewBox="0 0 100 150" id="loop-svg-7">
+                    <polygon id="l7-a" class="segment" points="20,10 90,10 82,18 28,18" />
+                    <polygon id="l7-b" class="segment" points="85,20 95,10 95,60 85,53" />
+                    <polygon id="l7-c" class="segment" points="85,71 95,65 95,118 85,110" />
+                    <polygon id="l7-d" class="segment" points="22,118 92,119 82,110 32,109" />
+                    <polygon id="l7-e" class="segment" points="20,66 30,72 30,106 20,115" />
+                    <polygon id="l7-f" class="segment" points="20,13 30,20 30,54 20,59" />
+                    <polygon id="l7-g" class="segment" points="30,56 22,61 30,66 84,66 92,61 84,56" />
+                    <circle id="l7-dp" class="segment" cx="105" cy="115" r="5" />
+                </svg>
+
+                <!-- 14-Segment Loop SVG -->
+                <svg viewBox="0 0 100 150" id="loop-svg-14">
+                    <polygon id="l14-a" class="segment" points="19,11 88,11 82,20 26,20" />
+                    <polygon id="l14-b" class="segment" points="91,11 91,69 84,63 84,22" />
+                    <polygon id="l14-c" class="segment" points="91,71 91,131 84,123 84,78" />
+                    <polygon id="l14-d" class="segment" points="23,124 82,124 89,132 18,132" />
+                    <polygon id="l14-e" class="segment" points="23,79 23,120 16,129 16,73" />
+                    <polygon id="l14-f" class="segment" points="23,21 23,62 16,69 16,12" />
+                    <polygon id="l14-g1" class="segment" points="26,64 48,64 53,71 47,76 26,76 19,70" />
+                    <polygon id="l14-g2" class="segment" points="62,64 82,64 87,70 82,76 62,76 58,71" />
+                    <polygon id="l14-h" class="segment" points="25,23 48,51 48,60 25,33" />
+                    <polygon id="l14-i" class="segment" points="51,22 59,22 59,61 56,69 52,62" />
+                    <polygon id="l14-j" class="segment" points="80,21 79,34 63,62 63,52" />
+                    <polygon id="l14-k" class="segment" points="51,76 51,88 26,122 26,111" />
+                    <polygon id="l14-l" class="segment" points="53,80 56,74 60,80 60,121 53,121" />
+                    <polygon id="l14-m" class="segment" points="62,77 82,110 82,121 62,87" />
+                    <circle id="l14-dp" class="segment" cx="98" cy="120" r="5" />
+                </svg>
+
+                <!-- 16-Segment Loop SVG -->
+                <svg viewBox="0 0 100 150" id="loop-svg-16">
+                    <polygon id="l16-a1" class="segment" points="10,10 44,10 40,18 16,18" />
+                    <polygon id="l16-a2" class="segment" points="46,10 80,10 73,18 51,18" />
+                    <polygon id="l16-b" class="segment" points="74,19 80,13 80,59 74,54" />
+                    <polygon id="l16-c" class="segment" points="74,68 80,61 80,107 74,99" />
+                    <polygon id="l16-d1" class="segment" points="17,103 40,103 44,110 12,110" />
+                    <polygon id="l16-d2" class="segment" points="50,103 74,103 79,110 46,110" />
+                    <polygon id="l16-e" class="segment" points="10,63 16,68 16,100 10,108" />
+                    <polygon id="l16-f" class="segment" points="10,14 16,21 16,54 10,60" />
+                    <polygon id="l16-g1" class="segment" points="18,55 39,55 44,60 40,66 18,66 12,61" />
+                    <polygon id="l16-g2" class="segment" points="52,55 71,55 77,61 72,66 50,66 47,60" />
+                    <polygon id="l16-h" class="segment" points="18,26 18,20 25,20 39,46 40,53 33,53" />
+                    <polygon id="l16-i" class="segment" points="41,22 45,13 50,22 50,53 45,59 41,51" />
+                    <polygon id="l16-j" class="segment" points="66,20 72,20 72,27 59,53 52,53 52,46" />
+                    <polygon id="l16-k" class="segment" points="33,68 39,68 39,76 25,101 18,101 18,94" />
+                    <polygon id="l16-l" class="segment" points="41,69 45,63 49,69 49,100 45,107 41,100" />
+                    <polygon id="l16-m" class="segment" points="51,74 51,68 57,68 72,93 72,101 66,101" />
+                    <circle id="l16-dp" class="segment" cx="92" cy="105" r="5" />
+                </svg>
+            </div>
+
+            <div class="loop-info" id="loop-info">CHAR: 0</div>
+            <div class="output-group" style="margin-top:auto;">
+                <div class="output-label">Status: Loop Map Data (1s)</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentMode = 7;
+        const keys7 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'];
+        const keys14 = ['a', 'b', 'c', 'd', 'e', 'f', 'g1', 'g2', 'h', 'i', 'j', 'k', 'l', 'm', 'dp'];
+        const keys16 = ['a1', 'a2', 'b', 'c', 'd1', 'd2', 'e', 'f', 'g1', 'g2', 'h', 'i', 'j', 'k', 'l', 'm', 'dp'];
+
+        // ฐานข้อมูล Array Map มาตรฐานสำหรับตระกูล 7, 14 และ 16 Segment (0-9, A-Z, a-f)
+        const fontMaps = {
+            7: {
+                '0': [1,1,1,1,1,1,0,0], '1': [0,1,1,0,0,0,0,0], '2': [1,1,0,1,1,0,1,0],
+                '3': [1,1,1,1,0,0,1,0], '4': [0,1,1,0,0,1,1,0], '5': [1,0,1,1,0,1,1,0],
+                '6': [1,0,1,1,1,1,1,0], '7': [1,1,1,0,0,0,0,0], '8': [1,1,1,1,1,1,1,0],
+                '9': [1,1,1,1,0,1,1,0], 'A': [1,1,1,0,1,1,1,0], 'b': [0,0,1,1,1,1,1,0],
+                'C': [1,0,0,1,1,1,0,0], 'd': [0,1,1,1,1,0,1,0], 'E': [1,0,0,1,1,1,1,0],
+                'F': [1,0,0,0,1,1,1,0]
+            },
+            14: {
+                '0': [1,1,1,1,1,1,0,0,0,0,1,1,0,0,0], '1': [0,1,1,0,0,0,0,0,0,0,1,0,0,0,0],
+                '2': [1,1,0,1,1,0,1,1,0,0,0,0,0,0,0], '3': [1,1,1,1,0,0,0,1,0,0,0,0,0,0,0],
+                '4': [0,1,1,0,0,1,1,1,0,0,0,0,0,0,0], '5': [1,0,1,1,0,1,1,1,0,0,0,0,0,0,0],
+                '6': [1,0,1,1,1,1,1,1,0,0,0,0,0,0,0], '7': [1,0,0,0,0,0,0,0,0,0,1,0,1,0,0],
+                '8': [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0], '9': [1,1,1,1,0,1,1,1,0,0,0,0,0,0,0],
+                'A': [1,1,1,0,1,1,1,1,0,0,0,0,0,0,0], 'B': [1,1,1,1,0,0,0,1,0,1,0,0,1,0,0],
+                'C': [1,0,0,1,1,1,0,0,0,0,0,0,0,0,0], 'D': [1,1,1,1,0,0,0,0,0,1,0,0,1,0,0],
+                'E': [1,0,0,1,1,1,1,0,0,0,0,0,0,0,0], 'F': [1,0,0,0,1,1,1,0,0,0,0,0,0,0,0],
+                'G': [1,0,1,1,1,1,0,1,0,0,0,0,0,0,0], 'H': [0,1,1,0,1,1,1,1,0,0,0,0,0,0,0],
+                'I': [1,0,0,1,0,0,0,0,0,1,0,0,1,0,0], 'J': [0,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+                'K': [0,0,0,0,1,1,1,0,0,0,1,0,0,1,0], 'L': [0,0,0,1,1,1,0,0,0,0,0,0,0,0,0],
+                'M': [0,1,1,0,1,1,0,0,1,0,1,0,0,0,0], 'N': [0,1,1,0,1,1,0,0,1,0,0,0,0,1,0],
+                'O': [1,1,1,1,1,1,0,0,0,0,0,0,0,0,0], 'P': [1,1,0,0,1,1,1,1,0,0,0,0,0,0,0],
+                'Q': [1,1,1,1,1,1,0,0,0,0,0,0,0,1,0], 'R': [1,1,0,0,1,1,1,1,0,0,0,0,0,1,0],
+                'S': [1,0,1,1,0,0,0,1,1,0,0,0,0,0,0], 'T': [1,0,0,0,0,0,0,0,0,1,0,0,1,0,0],
+                'U': [0,1,1,1,1,1,0,0,0,0,0,0,0,0,0], 'V': [0,0,0,0,1,1,0,0,0,0,1,1,0,0,0],
+                'W': [0,1,1,0,1,1,0,0,0,0,0,1,0,1,0], 'X': [0,0,0,0,0,0,0,0,1,0,1,1,0,1,0],
+                'Y': [0,0,0,0,0,0,0,0,1,0,1,0,1,0,0], 'Z': [1,0,0,1,0,0,0,0,0,0,1,1,0,0,0]
+            },
+            16: {
+                '0': [1,1,1,1,1,1,1,1,0,0,0,0,1,1,0,0,0], '1': [0,0,1,1,0,0,0,0,0,0,0,0,1,0,0,0,0],
+                '2': [1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,0], '3': [1,1,1,1,1,1,0,0,1,1,0,0,0,0,0,0,0],
+                '4': [0,0,1,1,0,0,0,1,1,1,0,0,0,0,0,0,0], '5': [1,1,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0],
+                '6': [1,1,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0], '7': [1,1,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0],
+                '8': [1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0], '9': [1,1,1,1,1,1,0,1,1,1,0,0,0,0,0,0,0],
+                'A': [1,1,1,1,0,0,1,1,1,1,0,0,0,0,0,0,0], 'B': [1,1,1,1,1,1,0,0,0,1,0,1,0,0,1,0,0],
+                'C': [1,1,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0], 'D': [1,1,1,1,1,1,0,0,0,0,0,1,0,0,1,0,0],
+                'E': [1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0], 'F': [1,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0],
+                'G': [1,1,0,1,1,1,1,1,0,1,0,0,0,0,0,0,0], 'H': [0,0,1,1,0,0,1,1,1,1,0,0,0,0,0,0,0],
+                'I': [1,1,0,0,1,1,0,0,0,0,0,1,0,0,1,0,0], 'J': [0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+                'K': [0,0,0,0,0,0,1,1,1,0,0,0,1,0,0,1,0], 'L': [0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0],
+                'M': [0,0,1,1,0,0,1,1,0,0,1,0,1,0,0,0,0], 'N': [0,0,1,1,0,0,1,1,0,0,1,0,0,0,0,1,0],
+                'O': [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0], 'P': [1,1,1,0,0,0,1,1,1,1,0,0,0,0,0,0,0],
+                'Q': [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,0], 'R': [1,1,1,0,0,0,1,1,1,1,0,0,0,0,0,1,0],
+                'S': [1,1,0,1,1,1,0,0,0,1,1,0,0,0,0,0,0], 'T': [1,1,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0],
+                'U': [0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0], 'V': [0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0],
+                'W': [0,0,1,1,0,0,1,1,0,0,0,0,0,1,0,1,0], 'X': [0,0,0,0,0,0,0,0,0,0,1,0,1,1,0,1,0],
+                'Y': [0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,0,0], 'Z': [1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0]
+            }
+        };
+
+        let loopTimer = null;
+        let lastBits = [];
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // อัปเดตสถานะ Active ของปุ่ม
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.id === `dec-btn-${mode}`);
+            });
+
+            // อัปเดตการแสดงผล SVG Display ทั้งหมด
+            ['7', '14', '16'].forEach(m => {
+                const decSvg = document.getElementById(`dec-svg-${m}`);
+                const loopSvg = document.getElementById(`loop-svg-${m}`);
+                if (decSvg) decSvg.classList.toggle('active-display', parseInt(m) === mode);
+                if (loopSvg) loopSvg.classList.toggle('active-display', parseInt(m) === mode);
+            });
+
+            document.getElementById('loop-block-title').textContent = `2. ${mode}-Segment Loop (1s)`;
+            
+            updateDecodeOutputs();
+            restartLoop();
+        }
+
+        function toggleDecSeg(type, name) {
+            const el = document.getElementById(`dec-${type}-${name}`);
+            if (el) {
+                el.classList.toggle('seg-on');
+                updateDecodeOutputs();
+            }
+        }
+
+        function updateDecodeOutputs() {
+            let keys = currentMode === 7 ? keys7 : (currentMode === 14 ? keys14 : keys16);
+            let bits = [];
+            let hexBits = [];
+
+            keys.forEach(key => {
+                const el = document.getElementById(`dec-${currentMode}-${key}`);
+                const isOn = el && el.classList.contains('seg-on') ? 1 : 0;
+                bits.push(isOn);
+                if (key !== 'dp') {
+                    hexBits.push(isOn);
+                }
+            });
+
+            lastBits = bits;
+
+            let tableHTML = '<tr>';
+            keys.forEach(key => { tableHTML += `<th>${key}</th>`; });
+            tableHTML += '</tr><tr>';
+            bits.forEach(bit => { tableHTML += `<td>${bit}</td>`; });
+            tableHTML += '</tr>';
+            document.getElementById('dec-out-table').innerHTML = tableHTML;
+
+            let decimalValue = 0;
+            hexBits.forEach((bit, index) => {
+                if (bit === 1) decimalValue += Math.pow(2, index);
+            });
+            let padSize = currentMode === 7 ? 2 : 4;
+            let hexStr = '0x' + decimalValue.toString(16).toUpperCase().padStart(padSize, '0');
+            document.getElementById('dec-out-hex').textContent = hexStr;
+        }
+
+        function copyArrayMap() {
+            const textToCopy = `[${lastBits.join(',')}]`;
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert('คัดลอก Array Map สำเร็จ: ' + textToCopy);
+            });
+        }
+
+        function restartLoop() {
+            if (loopTimer) clearInterval(loopTimer);
+
+            let keys = currentMode === 7 ? keys7 : (currentMode === 14 ? keys14 : keys16);
+            let prefix = currentMode === 7 ? 'l7-' : (currentMode === 14 ? 'l14-' : 'l16-');
+            
+            // กำหนดชุดตัวอักษรลูปตามโหมด
+            let charList = currentMode === 7 
+                ? ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "b", "C", "d", "E", "F"]
+                : "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+            let index = 0;
+
+            loopTimer = setInterval(() => {
+                let char = charList[index];
+                let mapData = fontMaps[currentMode][char];
+
+                keys.forEach((key, kidx) => {
+                    const el = document.getElementById(prefix + key);
+                    if (el) {
+                        if (mapData && mapData[kidx] === 1) {
+                            el.classList.add('seg-on');
+                        } else {
+                            el.classList.remove('seg-on');
+                        }
+                    }
+                });
+
+                document.getElementById('loop-info').textContent = `CHAR: ${char}`;
+                index = (index + 1) % charList.length;
+            }, 1000);
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('คัดลอกสำเร็จ: ' + text);
+            });
+        }
+
+        // เริ่มต้นการทำงานด้วยการเรียก switchMode เพื่อตั้งค่าเริ่มต้นให้ปุ่มและ SVG แสดงผลอย่างถูกต้อง
+        switchMode(16);
+    </script>
+</body>
+</html>
